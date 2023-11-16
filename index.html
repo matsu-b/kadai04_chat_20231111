@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sample</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <h1>AIペット「ポンタ」</h1>
+    <div class="imgbox">
+        <img src="./img/aipet.png" alt="aipet" class="aipet">
+    </div>
+    <textarea id="request_text" cols="100" rows="10"></textarea>
+    <br/>
+    <input type="button" onClick="reply()" value="話しかける" />
+    <br/><br/>
+    <textarea id="response_text" cols="100" rows="10" disabled></textarea>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
+</body>
+<script>
+    const API_KEY = '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';
+    const URL = "https://api.openai.com/v1/chat/completions";
+
+    function reply() {
+        var text = document.getElementById("request_text").value;
+        console.log(text);
+        async function getResponse() {
+            try {
+                const response = await axios.post(
+                    URL,
+                    {
+                        "model": "gpt-3.5-turbo",
+                        "messages": [
+                            { "role": "user", "content": "あなたは仕事で疲れて帰ってきたサラリーマンと会話をしています。相手に対して癒やしを与えることを意識し、絵文字もたくさん使って、次の文章に対して返事をしてください。"+ text }
+                        ]
+                    },
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${API_KEY}`,
+                        },
+                    }
+                );
+                var chatgpt_response = response.data.choices[0].message.content;
+                console.log(chatgpt_response);
+                $("#response_text").val(chatgpt_response);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+        getResponse();
+    }
+</script>
+</html>
