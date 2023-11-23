@@ -1,0 +1,74 @@
+.aipet {
+    width: 400px;
+    height: auto;
+    margin: 0 100px;
+}
+* {
+    box-sizing: border-box;
+  }
+  
+  h1 {
+    text-align: center;
+    margin: 50px 0;
+    font-size: 20px;
+  }
+  
+  .flex {
+    display: flex;
+  }
+  
+  input {
+    width: 500px;
+    padding: 10px;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  textarea {
+    width: 500px;
+    height: 150px;
+    padding: 10px;
+    margin: 0 auto 10px;
+    display: block;
+    resize: none;
+  }
+  
+  button {
+    width: 200px;
+    height: 50px;
+    margin: 0 auto 50px;
+    display: block;
+    font-size: 16px;
+  }
+  
+  #output {
+    width: 800px;
+    display: block;
+    height: 600px;
+    border: 1px solid #ccc;
+    margin: 0 auto;
+    border-radius: 8px;
+    padding: 10px;
+    overflow: auto;
+  }
+  
+  /* この記述はoutputの要素の中にあるdiv要素をしており、outputそのものを要素指定していない */
+  #output div { 
+    margin: 20px 0;
+  }
+  
+  
+  #output div:nth-child(odd){
+    background: rgb(199, 255, 192);
+    padding: 10px;
+    border-radius: 10px;
+    margin-left: auto;
+    width: fit-content;
+  }
+  
+  #output div:nth-child(even){
+    background: yellow;
+    padding: 10px;
+    border-radius: 10px;
+    width: fit-content;
+  }

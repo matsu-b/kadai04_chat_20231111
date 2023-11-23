@@ -5,52 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sample</title>
     <link rel="stylesheet" href="./css/style.css">
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
 </head>
 <body>
     <h1>AIペット「ポンタ」</h1>
-    <div class="imgbox">
-        <img src="./img/aipet.png" alt="aipet" class="aipet">
+    <div class="flex">
+        <div class="inputbox">
+            <img src="./img/aipet.png" alt="aipet" class="aipet">
+            <textarea id="request_text" cols="100" rows="10" placeholder="今日もおつかれさま〜！なんでも話しかけてねん！"></textarea>
+            <input type="button" id="send" onClick="reply()" value="話しかける"/>
+        </div>
+        <div id="output"></div>
     </div>
-    <textarea id="request_text" cols="100" rows="10"></textarea>
-    <br/>
-    <input type="button" onClick="reply()" value="話しかける" />
-    <br/><br/>
-    <textarea id="response_text" cols="100" rows="10" disabled></textarea>
-    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script src="https://unpkg.com/axios@1.1.2/dist/axios.min.js"></script>
-</body>
-<script>
-    const API_KEY = 'API KEY';
-    const URL = "https://api.openai.com/v1/chat/completions";
+    
+    
+    <!-- chat gpt API連携ここから -->
+        <script>    
+            const API_KEY = 'xxxx';
+            const URL = "https://api.openai.com/v1/chat/completions";
+            
+            
+            window.reply = async function() { //firebaseの処理をreply完了後に実行するという記述するためにグローバル関数にする
+                var text = document.getElementById("request_text").value;
+                console.log(text);
 
-    function reply() {
-        var text = document.getElementById("request_text").value;
-        console.log(text);
-        async function getResponse() {
-            try {
-                const response = await axios.post(
-                    URL,
-                    {
-                        "model": "gpt-3.5-turbo",
-                        "messages": [
-                            { "role": "user", "content": "あなたは仕事で疲れて帰ってきたサラリーマンと会話をしています。相手に対して癒やしを与えることを意識し、絵文字もたくさん使って、次の文章に対して返事をしてください。"+ text }
-                        ]
-                    },
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${API_KEY}`,
-                        },
+                // 非同期処理を含むため、getResponse関数も非同期関数として定義
+                async function getResponse() {
+                    try {
+                        const response = await axios.post(
+                            URL,
+                            {
+                                "model": "gpt-3.5-turbo",
+                                "messages": [
+                                    { "role": "user", "content": "あなたは仕事で疲れて帰ってきたサラリーマンと会話をしています。相手に対して癒やしを与えることを意識し、絵文字もたくさん使って、次の文章に対して返事をしてください。回答は50文字以内にしてください。"+ text }
+                                ]
+                            },
+                            {
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${API_KEY}`,
+                                },
+                            }       
+                        );
+                        window.chatgpt_response = response.data.choices[0].message.content; //firebaseの処理する記述でも使うのでグローバル変数として定義する
+                            console.log(window.chatgpt_response);
+                            // ここでFirebaseへの保存処理などを行う
+                    } catch (error) {
+                        console.error('エラーが発生しました:', error);
                     }
-                );
-                var chatgpt_response = response.data.choices[0].message.content;
-                console.log(chatgpt_response);
-                $("#response_text").val(chatgpt_response);
-            } catch (error) {
-                console.log(error);
+                }
+                // 非同期関数getResponseを実行
+                await getResponse();
             }
-        }
-        getResponse();
-    }
-</script>
+        </script>
+    <!-- chat gpt API連携ここまで -->
+        
+    <!-- firebase API連携ここから -->
+        <script type="module">    
+            // Import the functions you need from the SDKs you need
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+            import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved }
+            from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+            // Your web app's Firebase configuration
+            const firebaseConfig = {
+                apiKey: "xxxx",
+                authDomain: "xxxx",
+                projectId: "xxxx",
+                storageBucket: "xxxx",
+                messagingSenderId: "xxxx",
+                appId: "xxxx"
+            };
+            // firebaseにトンネルを空ける
+            const app = initializeApp(firebaseConfig);
+                
+            // トンネルの中でDBに接続する
+            const db = getDatabase(app); //RealtimeDBに接続
+            const dbRef = ref(db, "chat"); //RealtimeDB内の"chat"を使う
+
+            // 送信
+            $("#send").on("click",async function(){
+                await reply(); // chat gpt api連携のreply関数の完了を待つ
+                const request = $("#request_text").val();
+                const response = window.chatgpt_response;
+
+                console.log(request)
+                console.log(response)
+            
+                //データ登録
+                const msg = {
+                    request:request,
+                    response:response,
+                }
+                
+                // firebaseにデータを送る処理
+                const newPostRef = push(dbRef); //pushできる状態を作る処理（pushはfirebaseが用意した関数）
+                set(newPostRef, msg);            //DBに値をセットする（setはfirebaseが用意した関数）
+            
+                // 入力をしやすくするためにテキストボックスを空欄にする
+                $("#request_text").val('');
+            // この下は編集しない
+            });
+
+            //最初にデータ取得＆onSnapshotでリアルタイムにデータを取得
+            onChildAdded(dbRef, function (data) { //onChildAddedはfirebaseが定義した関数・jsではない・勝手にfor文を回してくれている
+                console.log(data) //データがkeyごとに1つ1つ取得する
+                const msg = data.val(); //持ってきたデータをオブジェクトに変換する処理
+                const key = data.key; //dataの中のkeyを指定している
+                
+                // classは見た目を操作する時に使う要素指定
+                // firebaseでデータを扱う時はdata-を使う
+                let html = `
+                    <div data-test=${key}> 
+                        <p>${msg.request}</p>
+                    </div>
+                    <div data-test=${key}> 
+                        <p>${msg.response}</p>
+                    </div>
+                `
+                // 画面に表示するために埋め込みます
+                $('#output').append(html)
+            })
+        </script>
+    </body>
 </html>
